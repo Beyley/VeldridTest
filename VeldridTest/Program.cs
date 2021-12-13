@@ -9,15 +9,8 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using Kettu;
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using ShaderGen;
-using ShaderGen.Glsl;
-using SharpText.Core;
-using SharpText.Veldrid;
 using Veldrid;
 using Veldrid.ImageSharp;
-using Veldrid.Sdl2;
 using Veldrid.SPIRV;
 using Veldrid.StartupUtilities;
 
@@ -58,6 +51,9 @@ namespace VeldridTest {
 				PreferDepthRangeZeroToOne         = true
 			};
 
+			// graphicsDeviceOptions.Debug               = true;
+			graphicsDeviceOptions.SyncToVerticalBlank = false;
+			
 			//Create a graphics device that we will render to
 			RenderState.GraphicsDevice = VeldridStartup.CreateGraphicsDevice(RenderState.Window, graphicsDeviceOptions, GraphicsBackend.Vulkan);
 
@@ -89,7 +85,8 @@ namespace VeldridTest {
 			while (RenderState.Window.Exists) {
 				RenderState.Window.PumpEvents();
 				Update();
-				Draw();
+				if(RenderState.Window.Exists)
+					Draw();
 			}
 			
 			//Dispose resources

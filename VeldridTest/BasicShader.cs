@@ -1,6 +1,5 @@
 using System.Numerics;
 using ShaderGen;
-using SharpDX.Direct3D11;
 using Veldrid;
 using static ShaderGen.ShaderBuiltins;
 

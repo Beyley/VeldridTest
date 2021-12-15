@@ -3,15 +3,15 @@ using Veldrid;
 
 namespace VeldridTest {
 	public class DrawableObject : IDisposable {
-		public DeviceBuffer VertexBuffer;
 		public DeviceBuffer IndexBuffer;
+		public ushort[]     Indices;
+
+		public Texture2D Texture;
+		public DeviceBuffer      VertexBuffer;
 
 		public Vertex[] Vertices;
-		public ushort[]              Indices;
 
-		public DrawableObject() {
-			
-		}
+		public DrawableObject() {}
 
 		public DrawableObject(Vertex[] vertices, ushort[] indices, RenderState renderState) {
 			this.Vertices = vertices;
@@ -21,9 +21,16 @@ namespace VeldridTest {
 			this.UpdateBuffers(renderState);
 		}
 
+		public void Dispose() {
+			this.VertexBuffer?.Dispose();
+			this.IndexBuffer?.Dispose();
+
+			GC.SuppressFinalize(this);
+		}
+
 		public void CreateBuffers(RenderState renderState) {
 			ResourceFactory factory = renderState.GraphicsDevice.ResourceFactory;
-			
+
 			//Create the vertex buffer
 			this.VertexBuffer = factory.CreateBuffer(new BufferDescription((uint)(this.Vertices.Length * Vertex.SizeInBytes), BufferUsage.VertexBuffer));
 			//Create the index buffer
@@ -35,13 +42,6 @@ namespace VeldridTest {
 			renderState.GraphicsDevice.UpdateBuffer(this.VertexBuffer, 0, this.Vertices);
 			//Fill the index buffer and make it viewable to the GPU
 			renderState.GraphicsDevice.UpdateBuffer(this.IndexBuffer, 0, this.Indices);
-		}
-
-		public void Dispose() {
-			this.VertexBuffer?.Dispose();
-			this.IndexBuffer?.Dispose();
-			
-			GC.SuppressFinalize(this);
 		}
 
 		public void Draw(RenderState renderState) {

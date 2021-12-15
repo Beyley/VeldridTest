@@ -15,19 +15,15 @@ using Veldrid.SPIRV;
 using Veldrid.StartupUtilities;
 
 namespace VeldridTest {
-	internal class Program {
+	internal partial class Program {
 		private static RenderState RenderState = new();
 
 		public static List<DrawableObject> DrawableObjects;
 
 		private static DeviceBuffer _ProjectionBuffer;
-		private static ResourceSet  _GlobalResourceSet;
-		private static ResourceSet  _TextureResourceSet;
+		private static ResourceSet  _ProjectionBufferResourceSet;
 
 		private static Stopwatch _Stopwatch;
-
-		public static Texture TestTexture;
-		public static TextureView TestTextureView;
 
 		private static void Main(string[] args) {
 			Logger.StartLogging();
@@ -74,9 +70,18 @@ namespace VeldridTest {
 			
 			//Basic KeyDown event
 			RenderState.Window.KeyDown += delegate(KeyEvent @event) {
+				Texture2D texture = TextureLoader.LoadTexture("obsoletethisgrab.png", RenderState.GraphicsDevice.Aniso4xSampler, RenderState);
+				if (@event.Key == Key.A) {
+					
+					texture = TextureLoader.LoadTexture("2.png", RenderState.GraphicsDevice.Aniso4xSampler, RenderState);
+				}
+				
 				Logger.Log(@event.Key.ToString());
 
-				DrawableObjects.Add(new PrimitiveQuadDrawable(new Vector2(200 + xtest, 200), new(400), RenderState));
+
+				DrawableObjects.Add(new PrimitiveQuadDrawable(new Vector2(200 + xtest, 200), new(400), RenderState) {
+					Texture = texture
+				});
 				
 				xtest += 300;
 			};
@@ -85,8 +90,11 @@ namespace VeldridTest {
 			while (RenderState.Window.Exists) {
 				RenderState.Window.PumpEvents();
 				Update();
-				if(RenderState.Window.Exists)
+				if (RenderState.Window.Exists) {
+					// Profiler.StartCapture("draw");
 					Draw();
+					// Logger.Log($"draw took {Profiler.EndCapture("draw").Length} ms!");
+				}
 			}
 			
 			//Dispose resources
@@ -99,7 +107,7 @@ namespace VeldridTest {
 		}
 
 		public static void DisposeResources() {
-			RenderState.Pipeline.Dispose();
+			RenderState.TexturedPipeline.Dispose();
 			RenderState.Shaders[0].Dispose();
 			RenderState.Shaders[1].Dispose();
 			RenderState.CommandList.Dispose();
@@ -114,32 +122,23 @@ namespace VeldridTest {
 			DrawableObjects = new();
 			
 			//Get the graphics factory from the graphics device, this is used to create graphic resources 
-			ResourceFactory factory = RenderState.GraphicsDevice.ResourceFactory; 
+			RenderState.ResourceFactory = RenderState.GraphicsDevice.ResourceFactory;
+			
+			Texture2D.ResourceLayout = RenderState.ResourceFactory.CreateResourceLayout(new(new ResourceLayoutElementDescription("SurfaceTexture", ResourceKind.TextureReadOnly, ShaderStages.Fragment),
+																							new ResourceLayoutElementDescription("SurfaceSampler", ResourceKind.Sampler, ShaderStages.Fragment)));
 
-			ImageSharpTexture textureRaw = new("obsoletethisgrab.png");
+			Texture2D texture = new(new("obsoletethisgrab.png"), RenderState.GraphicsDevice.Aniso4xSampler, RenderState);
 			
-			TestTexture     = textureRaw.CreateDeviceTexture(RenderState.GraphicsDevice, factory);
-			TestTextureView = factory.CreateTextureView(TestTexture);
-			
-			_ProjectionBuffer = factory.CreateBuffer(new((uint)Unsafe.SizeOf<Matrix4x4>(), BufferUsage.UniformBuffer));
+			_ProjectionBuffer = RenderState.ResourceFactory.CreateBuffer(new((uint)Unsafe.SizeOf<Matrix4x4>(), BufferUsage.UniformBuffer));
 
 			RenderState.Window.Resized += UpdateProjectionBuffer;
 
-			ResourceLayoutDescription resourceLayoutDescription = new(
+			ResourceLayoutDescription projectionBufferLayoutDescription = new(
 				new ResourceLayoutElementDescription("ProjectionBuffer", ResourceKind.UniformBuffer, ShaderStages.Vertex));
 			
-			ResourceLayout globalResourceSetLayout = factory.CreateResourceLayout(resourceLayoutDescription);
+			ResourceLayout projectionBufferResourceLayout = RenderState.ResourceFactory.CreateResourceLayout(projectionBufferLayoutDescription);
 
-			ResourceLayout textureLayout = factory.CreateResourceLayout(new(new ResourceLayoutElementDescription("SurfaceTexture", ResourceKind.TextureReadOnly, ShaderStages.Fragment),
-																			new ResourceLayoutElementDescription("SurfaceSampler", ResourceKind.Sampler, ShaderStages.Fragment)));
-
-			_GlobalResourceSet = factory.CreateResourceSet(new ResourceSetDescription(globalResourceSetLayout, _ProjectionBuffer));
-			_TextureResourceSet = factory.CreateResourceSet(
-				new ResourceSetDescription(
-					textureLayout, 
-					TestTextureView, 
-					RenderState.GraphicsDevice.Aniso4xSampler)
-				);
+			_ProjectionBufferResourceSet = RenderState.ResourceFactory.CreateResourceSet(new ResourceSetDescription(projectionBufferResourceLayout, _ProjectionBuffer));
 
 			//Defines how the vertex struct is layed out 
 			VertexLayoutDescription vertexLayout = new(
@@ -158,7 +157,7 @@ namespace VeldridTest {
 				"main");
 
 			//Creates the shaders
-			RenderState.Shaders = factory.CreateFromSpirv(vertexShaderDesc, fragmentShaderDesc);
+			RenderState.Shaders = RenderState.ResourceFactory.CreateFromSpirv(vertexShaderDesc, fragmentShaderDesc);
 
 			//Create a new pipeline description 
 			GraphicsPipelineDescription pipelineDescription = new() {
@@ -177,7 +176,7 @@ namespace VeldridTest {
 					false),
 				//Sets the primitive topology to a list of triangles
 				PrimitiveTopology = PrimitiveTopology.TriangleList,
-				ResourceLayouts   = new []{ globalResourceSetLayout, textureLayout },
+				ResourceLayouts   = new []{ projectionBufferResourceLayout, Texture2D.ResourceLayout },
 				//Sets the shaders of the pipeline
 				ShaderSet         = new ShaderSetDescription(
 					new[] { vertexLayout },
@@ -186,9 +185,9 @@ namespace VeldridTest {
 				Outputs = RenderState.GraphicsDevice.SwapchainFramebuffer.OutputDescription
 			};
 
-			RenderState.Pipeline = factory.CreateGraphicsPipeline(pipelineDescription);
+			RenderState.TexturedPipeline = RenderState.ResourceFactory.CreateGraphicsPipeline(pipelineDescription);
 
-			RenderState.CommandList = factory.CreateCommandList();
+			RenderState.CommandList = RenderState.ResourceFactory.CreateCommandList();
 			
 			UpdateProjectionBuffer();
 
@@ -215,12 +214,12 @@ namespace VeldridTest {
 			RenderState.CommandList.SetFullViewports();
 			
 			//Set the pipeline
-			RenderState.CommandList.SetPipeline(RenderState.Pipeline);
-			//Set the graphics resource set
-			RenderState.CommandList.SetGraphicsResourceSet(0, _GlobalResourceSet);
-			RenderState.CommandList.SetGraphicsResourceSet(1, _TextureResourceSet);
+			RenderState.CommandList.SetPipeline(RenderState.TexturedPipeline);
+			//Set the graphics resource set that contains
+			RenderState.CommandList.SetGraphicsResourceSet(0, _ProjectionBufferResourceSet);
 
 			foreach (DrawableObject drawable in DrawableObjects) {
+				RenderState.CommandList.SetGraphicsResourceSet(1, drawable.Texture.ResourceSet);
 				drawable.Draw(RenderState);
 			}
 			

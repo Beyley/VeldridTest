@@ -6,15 +6,24 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <PackageReference Include="EeveeTools" Version="1.0.0" />
+      <PackageReference Include="Eto.Forms" Version="2.6.0" />
+      <PackageReference Include="Eto.Platform.Gtk" Version="2.6.0" />
+      <PackageReference Include="Eto.Platform.Gtk3" Version="2.6.0" />
+      <PackageReference Include="Eto.Veldrid" Version="0.1.0" />
+      <PackageReference Include="Eto.Veldrid.Gtk" Version="0.1.0" />
       <PackageReference Include="JetBrains.Annotations" Version="2021.3.0" />
       <PackageReference Include="Kettu" Version="1.2.1" />
       <PackageReference Include="ShaderGen" Version="1.2.0-beta3" />
       <PackageReference Include="ShaderGen.Primitives" Version="1.2.0-beta3" />
       <PackageReference Include="SharpText.Veldrid" Version="0.2.0" />
-      <PackageReference Include="Veldrid" Version="4.8.0" />
-      <PackageReference Include="Veldrid.ImageSharp" Version="4.8.0" />
+      <PackageReference Include="Veldrid" Version="4.9.0-gffcf1cdb33" />
+      <PackageReference Include="Veldrid.ImageSharp" Version="4.9.0-gffcf1cdb33" />
+      <PackageReference Include="Veldrid.MetalBindings" Version="4.9.0-gffcf1cdb33" />
+      <PackageReference Include="Veldrid.OpenGLBindings" Version="4.9.0-gffcf1cdb33" />
+      <PackageReference Include="Veldrid.SDL2" Version="4.9.0-gffcf1cdb33" />
       <PackageReference Include="Veldrid.SPIRV" Version="1.0.14" />
-      <PackageReference Include="Veldrid.StartupUtilities" Version="4.8.0" />
+      <PackageReference Include="Veldrid.StartupUtilities" Version="4.9.0-gffcf1cdb33" />
     </ItemGroup>
 
     <ItemGroup>

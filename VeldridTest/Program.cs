@@ -8,15 +8,20 @@ using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
+using FontStashSharp;
+using Gdk;
 using Kettu;
 using Veldrid;
 using Veldrid.ImageSharp;
 using Veldrid.SPIRV;
 using Veldrid.StartupUtilities;
+using VeldridTest.FontStashSharp;
+using Color = System.Drawing.Color;
+using Key = Veldrid.Key;
 
 namespace VeldridTest {
 	internal partial class Program {
-		private static RenderState RenderState = new();
+		public static RenderState RenderState = new();
 
 		public static List<DrawableObject> DrawableObjects;
 
@@ -24,6 +29,10 @@ namespace VeldridTest {
 		private static ResourceSet  _ProjectionBufferResourceSet;
 
 		private static Stopwatch _Stopwatch;
+		
+		private static VeldridFontStashRenderer _TextRenderer;
+		private static FontSystem               _TestFontSystem;
+		private static DynamicSpriteFont        _TestFont;
 
 		private static void Main(string[] args) {
 			Logger.StartLogging();
@@ -51,7 +60,7 @@ namespace VeldridTest {
 			graphicsDeviceOptions.SyncToVerticalBlank = false;
 			
 			//Create a graphics device that we will render to
-			RenderState.GraphicsDevice = VeldridStartup.CreateGraphicsDevice(RenderState.Window, graphicsDeviceOptions, GraphicsBackend.Vulkan);
+			RenderState.GraphicsDevice = VeldridStartup.CreateGraphicsDevice(RenderState.Window, graphicsDeviceOptions, GraphicsBackend.OpenGL);
 
 			//Log the backend used
 			Logger.Log($"Window created with the {RenderState.GraphicsDevice.BackendType.ToString()} backend!");
@@ -126,8 +135,7 @@ namespace VeldridTest {
 			
 			Texture2D.ResourceLayout = RenderState.ResourceFactory.CreateResourceLayout(new(new ResourceLayoutElementDescription("SurfaceTexture", ResourceKind.TextureReadOnly, ShaderStages.Fragment),
 																							new ResourceLayoutElementDescription("SurfaceSampler", ResourceKind.Sampler, ShaderStages.Fragment)));
-
-			Texture2D texture = new(new("obsoletethisgrab.png"), RenderState.GraphicsDevice.Aniso4xSampler, RenderState);
+			// Texture2D texture = new(new("obsoletethisgrab.png"), RenderState.GraphicsDevice.Aniso4xSampler, RenderState);
 			
 			_ProjectionBuffer = RenderState.ResourceFactory.CreateBuffer(new((uint)Unsafe.SizeOf<Matrix4x4>(), BufferUsage.UniformBuffer));
 
@@ -169,7 +177,7 @@ namespace VeldridTest {
 					ComparisonKind.LessEqual),
 				//Set the rasterizer state
 				RasterizerState = new RasterizerStateDescription(
-					FaceCullMode.Front,
+					FaceCullMode.None,
 					PolygonFillMode.Solid,
 					FrontFace.Clockwise,
 					true,
@@ -190,6 +198,13 @@ namespace VeldridTest {
 			RenderState.CommandList = RenderState.ResourceFactory.CreateCommandList();
 			
 			UpdateProjectionBuffer();
+			
+			_TextRenderer = new VeldridFontStashRenderer(RenderState);
+
+			_TestFontSystem = new(new FontSystemSettings());
+			_TestFontSystem.AddFont(File.ReadAllBytes("default-font.ttf"));
+
+			_TestFont = _TestFontSystem.GetFont(100);
 
 			// Font font = new("default-font.ttf", 20);
 
@@ -222,6 +237,8 @@ namespace VeldridTest {
 				RenderState.CommandList.SetGraphicsResourceSet(1, drawable.Texture.ResourceSet);
 				drawable.Draw(RenderState);
 			}
+
+			_TestFont.DrawText(_TextRenderer, "this is a test!", new(10), Color.White);
 			
 			// _TextRenderer.Draw();
 			

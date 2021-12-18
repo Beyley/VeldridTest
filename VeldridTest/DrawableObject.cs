@@ -6,10 +6,10 @@ namespace VeldridTest {
 		public DeviceBuffer IndexBuffer;
 		public ushort[]     Indices;
 
-		public Texture2D Texture;
-		public DeviceBuffer      VertexBuffer;
+		public DeviceBuffer VertexBuffer;
+		public Vertex[]     Vertices;
 
-		public Vertex[] Vertices;
+		public Texture2D Texture;
 
 		public DrawableObject() {}
 

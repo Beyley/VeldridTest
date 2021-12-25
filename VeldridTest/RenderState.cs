@@ -10,5 +10,7 @@ namespace VeldridTest {
 		public Shader[]   Shaders;
 		public Pipeline   TexturedPipeline;
 		public Sdl2Window Window;
+		
+		public ResourceSet ProjectionBufferResourceSet;
 	}
 }

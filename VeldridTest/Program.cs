@@ -1,18 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data;
+﻿using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using FontStashSharp;
-using Gdk;
 using Kettu;
 using Veldrid;
-using Veldrid.ImageSharp;
 using Veldrid.SPIRV;
 using Veldrid.StartupUtilities;
 using VeldridTest.FontStashSharp;
@@ -20,13 +15,12 @@ using Color = System.Drawing.Color;
 using Key = Veldrid.Key;
 
 namespace VeldridTest {
-	internal partial class Program {
+	internal class Program {
 		public static RenderState RenderState = new();
 
-		public static List<DrawableObject> DrawableObjects;
+		public static List<Drawable> DrawableObjects;
 
 		private static DeviceBuffer _ProjectionBuffer;
-		private static ResourceSet  _ProjectionBufferResourceSet;
 
 		private static Stopwatch _Stopwatch;
 		
@@ -88,9 +82,7 @@ namespace VeldridTest {
 				Logger.Log(@event.Key.ToString());
 
 
-				DrawableObjects.Add(new PrimitiveQuadDrawable(new Vector2(200 + xtest, 200), new(400), RenderState) {
-					Texture = texture
-				});
+				DrawableObjects.Add(new DrawableTexture(new Vector2(200 + xtest, 200), texture));
 				
 				xtest += 300;
 			};
@@ -146,7 +138,7 @@ namespace VeldridTest {
 			
 			ResourceLayout projectionBufferResourceLayout = RenderState.ResourceFactory.CreateResourceLayout(projectionBufferLayoutDescription);
 
-			_ProjectionBufferResourceSet = RenderState.ResourceFactory.CreateResourceSet(new ResourceSetDescription(projectionBufferResourceLayout, _ProjectionBuffer));
+			RenderState.ProjectionBufferResourceSet = RenderState.ResourceFactory.CreateResourceSet(new ResourceSetDescription(projectionBufferResourceLayout, _ProjectionBuffer));
 
 			//Defines how the vertex struct is layed out 
 			VertexLayoutDescription vertexLayout = new(
@@ -205,12 +197,6 @@ namespace VeldridTest {
 			_TestFontSystem.AddFont(File.ReadAllBytes("default-font.ttf"));
 
 			_TestFont = _TestFontSystem.GetFont(100);
-
-			// Font font = new("default-font.ttf", 20);
-
-			// _TextRenderer = new VeldridTextRenderer(_GraphicsDevice, _CommandList, font);
-
-			// _TextRenderer.DrawText("The quick brown fox jumps over the lazy dog", new Vector2(5, 5), new Color(255, 255, 255, 1), 2);
 		}
 
 		public static void Update() {
@@ -218,37 +204,17 @@ namespace VeldridTest {
 		}
 
 		public static void Draw() {
-			RenderState.CommandList.Begin();
-			
-			//Set the framebuffer to render to
-			RenderState.CommandList.SetFramebuffer(RenderState.GraphicsDevice.SwapchainFramebuffer);
+			Renderer.Begin(RenderState);
 
-			//Clear the screen to black
-			RenderState.CommandList.ClearColorTarget(0, RgbaFloat.Black);
+			Renderer.ClearColor(RgbaFloat.Black);
 
-			RenderState.CommandList.SetFullViewports();
-			
-			//Set the pipeline
-			RenderState.CommandList.SetPipeline(RenderState.TexturedPipeline);
-			//Set the graphics resource set that contains
-			RenderState.CommandList.SetGraphicsResourceSet(0, _ProjectionBufferResourceSet);
-
-			foreach (DrawableObject drawable in DrawableObjects) {
-				RenderState.CommandList.SetGraphicsResourceSet(1, drawable.Texture.ResourceSet);
+			foreach (Drawable drawable in DrawableObjects) {
 				drawable.Draw(RenderState);
 			}
-
+			
 			_TestFont.DrawText(_TextRenderer, "this is a test!", new(10), Color.White);
-			
-			// _TextRenderer.Draw();
-			
-			RenderState.CommandList.End();
 
-			//Submit commands to the GPU
-			RenderState.GraphicsDevice.SubmitCommands(RenderState.CommandList);
-			
-			// ?
-			RenderState.GraphicsDevice.SwapBuffers();
+			Renderer.End();
 		}
 
 		public static string ReadStringFromEmbeddedResource(string name) {

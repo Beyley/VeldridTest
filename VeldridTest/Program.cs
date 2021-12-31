@@ -54,7 +54,7 @@ namespace VeldridTest {
 			graphicsDeviceOptions.SyncToVerticalBlank = false;
 			
 			//Create a graphics device that we will render to
-			RenderState.GraphicsDevice = VeldridStartup.CreateGraphicsDevice(RenderState.Window, graphicsDeviceOptions, GraphicsBackend.OpenGL);
+			RenderState.GraphicsDevice = VeldridStartup.CreateGraphicsDevice(RenderState.Window, graphicsDeviceOptions);
 
 			//Log the backend used
 			Logger.Log($"Window created with the {RenderState.GraphicsDevice.BackendType.ToString()} backend!");
@@ -87,13 +87,22 @@ namespace VeldridTest {
 				xtest += 300;
 			};
 
+			double lastFrameTime = 0;
+			
 			//Game loop
 			while (RenderState.Window.Exists) {
+				if (lastFrameTime != 0)
+					lastFrameTime = Profiler.EndCapture("fps")!.Length;
+				else
+					lastFrameTime = 1;
+				Profiler.StartCapture("fps");
+				
+				
 				RenderState.Window.PumpEvents();
 				Update();
 				if (RenderState.Window.Exists) {
 					// Profiler.StartCapture("draw");
-					Draw();
+					Draw(lastFrameTime);
 					// Logger.Log($"draw took {Profiler.EndCapture("draw").Length} ms!");
 				}
 			}
@@ -200,10 +209,10 @@ namespace VeldridTest {
 		}
 
 		public static void Update() {
-			
+			DrawableObjects.ForEach(x => x.Position.X = ((Stopwatch.GetTimestamp() / (float)Stopwatch.Frequency) % 1) * 1000);
 		}
 
-		public static void Draw() {
+		public static void Draw(double lastFrameTime) {
 			Renderer.Begin(RenderState);
 
 			Renderer.ClearColor(RgbaFloat.Black);
@@ -212,7 +221,7 @@ namespace VeldridTest {
 				drawable.Draw(RenderState);
 			}
 			
-			_TestFont.DrawText(_TextRenderer, "this is a test!", new(10), Color.White);
+			_TestFont.DrawText(_TextRenderer, (1000d / lastFrameTime).ToString(), new(10), Color.White);
 
 			Renderer.End();
 		}

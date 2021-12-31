@@ -33,17 +33,14 @@ namespace VeldridTest {
 	public static class Profiler {
 		private static Dictionary<string, ProfilerCapture> _Results;
 
-		private static Stopwatch _Stopwatch;
-		
 		public static void Initialize() {
-			_Stopwatch = new();
-			_Stopwatch.Start();
-
 			_Results = new();
 		}
 
+		public static double GetTimestamp() => Stopwatch.GetTimestamp() / (double)Stopwatch.Frequency * 1000d;
+		
 		public static void StartCapture(string name) {
-			ProfilerCapture capture = new (_Stopwatch.Elapsed.TotalMilliseconds);
+			ProfilerCapture capture = new (GetTimestamp());
 
 			_Results.Remove(name);
 			
@@ -53,13 +50,9 @@ namespace VeldridTest {
 		[CanBeNull]
 		public static ProfilerCapture EndCapture(string name) {
 			if(_Results.TryGetValue(name, out ProfilerCapture capture))
-				capture.SetEnd(_Stopwatch.Elapsed.TotalMilliseconds);
+				capture.SetEnd(GetTimestamp());
 
 			return capture;
-		}
-
-		public static void Dispose() {
-			_Stopwatch.Stop();
 		}
 	}
 }

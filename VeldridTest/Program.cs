@@ -3,9 +3,11 @@ using System.Diagnostics;
 using System.IO;
 using System.Numerics;
 using System.Reflection;
+using System.Reflection.Metadata.Ecma335;
 using System.Runtime.CompilerServices;
 using System.Text;
 using FontStashSharp;
+using Gdk;
 using Kettu;
 using Veldrid;
 using Veldrid.SPIRV;
@@ -27,6 +29,8 @@ namespace VeldridTest {
 		private static VeldridFontStashRenderer _TextRenderer;
 		private static FontSystem               _TestFontSystem;
 		private static DynamicSpriteFont        _TestFont;
+
+		private static bool _captureWanted;
 
 		private static void Main(string[] args) {
 			Logger.StartLogging();
@@ -73,6 +77,11 @@ namespace VeldridTest {
 			
 			//Basic KeyDown event
 			RenderState.Window.KeyDown += delegate(KeyEvent @event) {
+				if (@event.Key == Key.Enter) {
+					_captureWanted = true;
+					return;
+				}
+				
 				Texture2D texture = TextureLoader.LoadTexture("obsoletethisgrab.png", RenderState.GraphicsDevice.Aniso4xSampler, RenderState);
 				if (@event.Key == Key.A) {
 					
@@ -82,9 +91,11 @@ namespace VeldridTest {
 				Logger.Log(@event.Key.ToString());
 
 
-				DrawableObjects.Add(new DrawableTexture(new Vector2(200 + xtest, 200), texture));
+				DrawableObjects.Add(new DrawableTexture(new Vector2(200 + xtest, 200), texture) {
+					Scale = new(0.1f)
+				});
 				
-				xtest += 300;
+				xtest += 100;
 			};
 
 			double lastFrameTime = 0;
@@ -98,12 +109,21 @@ namespace VeldridTest {
 				Profiler.StartCapture("fps");
 				
 				
-				RenderState.Window.PumpEvents();
 				Update();
-				if (RenderState.Window.Exists) {
-					// Profiler.StartCapture("draw");
-					Draw(lastFrameTime);
-					// Logger.Log($"draw took {Profiler.EndCapture("draw").Length} ms!");
+				
+				if (!RenderState.Window.Exists)
+					continue;
+				
+				RenderState.Window.PumpEvents();
+				
+				if(_captureWanted)
+					Profiler.StartCapture("draw");
+				
+				Draw(lastFrameTime);
+					
+				if (_captureWanted) {
+					Logger.Log($"draw took {Profiler.EndCapture("draw")!.Length} ms!");
+					_captureWanted = false;
 				}
 			}
 			
@@ -209,7 +229,7 @@ namespace VeldridTest {
 		}
 
 		public static void Update() {
-			DrawableObjects.ForEach(x => x.Position.X = ((Stopwatch.GetTimestamp() / (float)Stopwatch.Frequency) % 1) * 1000);
+			// DrawableObjects.ForEach(x => x.Position.X = ((Stopwatch.GetTimestamp() / (float)Stopwatch.Frequency) % 1) * 1000);
 		}
 
 		public static void Draw(double lastFrameTime) {
@@ -221,7 +241,7 @@ namespace VeldridTest {
 				drawable.Draw(RenderState);
 			}
 			
-			_TestFont.DrawText(_TextRenderer, (1000d / lastFrameTime).ToString(), new(10), Color.White);
+			// _TestFont.DrawText(_TextRenderer, (1000d / lastFrameTime).ToString(), new(10), Color.White);
 
 			Renderer.End();
 		}

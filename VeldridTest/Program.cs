@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Numerics;
@@ -32,6 +33,9 @@ namespace VeldridTest {
 
 		private static bool _captureWanted;
 
+		private static Texture2D _Tex1;
+		private static Texture2D _Tex2;
+		
 		private static void Main(string[] args) {
 			Logger.StartLogging();
 			Logger.AddLogger(new ConsoleLogger());
@@ -51,14 +55,15 @@ namespace VeldridTest {
 			//Set the options for the graphics device
 			GraphicsDeviceOptions graphicsDeviceOptions = new() {
 				PreferStandardClipSpaceYDirection = true,
-				PreferDepthRangeZeroToOne         = true
+				PreferDepthRangeZeroToOne         = true,
+				ResourceBindingModel              = ResourceBindingModel.Improved
 			};
 
 			// graphicsDeviceOptions.Debug               = true;
 			graphicsDeviceOptions.SyncToVerticalBlank = false;
 			
 			//Create a graphics device that we will render to
-			RenderState.GraphicsDevice = VeldridStartup.CreateGraphicsDevice(RenderState.Window, graphicsDeviceOptions);
+			RenderState.GraphicsDevice = VeldridStartup.CreateGraphicsDevice(RenderState.Window, graphicsDeviceOptions, GraphicsBackend.Vulkan);
 
 			//Log the backend used
 			Logger.Log($"Window created with the {RenderState.GraphicsDevice.BackendType.ToString()} backend!");
@@ -73,7 +78,9 @@ namespace VeldridTest {
 			CreateResources();
 			Logger.Log($"Creating resources took {Profiler.EndCapture("createResources")!.Length}ms!");
  
-			float xtest = 0;
+			// float xtest = 0;
+
+			Random random = new();
 			
 			//Basic KeyDown event
 			RenderState.Window.KeyDown += delegate(KeyEvent @event) {
@@ -82,20 +89,13 @@ namespace VeldridTest {
 					return;
 				}
 				
-				Texture2D texture = TextureLoader.LoadTexture("obsoletethisgrab.png", RenderState.GraphicsDevice.Aniso4xSampler, RenderState);
-				if (@event.Key == Key.A) {
-					
-					texture = TextureLoader.LoadTexture("2.png", RenderState.GraphicsDevice.Aniso4xSampler, RenderState);
-				}
-				
 				Logger.Log(@event.Key.ToString());
 
-
-				DrawableObjects.Add(new DrawableTexture(new Vector2(200 + xtest, 200), texture) {
+				DrawableObjects.Add(new DrawableTexture(new Vector2(random.Next(-1, (int)(RenderState.GraphicsDevice.SwapchainFramebuffer.Width)), random.Next(-1, (int)(RenderState.GraphicsDevice.SwapchainFramebuffer.Height))), @event.Key == Key.A ? _Tex1 : _Tex2) {
 					Scale = new(0.1f)
 				});
 				
-				xtest += 100;
+				// xtest += 100;
 			};
 
 			double lastFrameTime = 0;
@@ -226,6 +226,10 @@ namespace VeldridTest {
 			_TestFontSystem.AddFont(File.ReadAllBytes("default-font.ttf"));
 
 			_TestFont = _TestFontSystem.GetFont(100);
+			
+			_Tex1 = TextureLoader.LoadTexture("obsoletethisgrab.png", RenderState.GraphicsDevice.Aniso4xSampler, RenderState);
+			_Tex2 = TextureLoader.LoadTexture("2.png", RenderState.GraphicsDevice.Aniso4xSampler, RenderState);
+
 		}
 
 		public static void Update() {

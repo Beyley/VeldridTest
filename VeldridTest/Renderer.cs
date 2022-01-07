@@ -39,9 +39,11 @@ namespace VeldridTest {
 
 		public static void DrawTexture(Texture2D texture, Vector2 position, RgbaFloat color, System.Drawing.Point size, Rectangle? src = null) => DrawTexture(texture, position, color, new Vector2(size.X, size.Y), src);
 		
+		private static DeviceBuffer _IndexBuffer;
+		private static DeviceBuffer _VertexBuffer;
+		
 		public static void DrawTexture(Texture2D texture, Vector2 position, RgbaFloat color, Vector2 size, Rectangle? src = null) {
-			DeviceBuffer indexBuffer;
-			DeviceBuffer vertexBuffer;
+			
 
 			Vector2 texBL = new(0, 1);
 			Vector2 texBR = new(1, 1);
@@ -78,20 +80,22 @@ namespace VeldridTest {
 			
 			ResourceFactory factory = _RenderState.GraphicsDevice.ResourceFactory;
 
-			vertexBuffer = factory.CreateBuffer(new BufferDescription((uint)(vertices.Length * Vertex.SizeInBytes), BufferUsage.VertexBuffer));
-			indexBuffer  = factory.CreateBuffer(new BufferDescription((uint)(indices.Length  * sizeof(ushort)), BufferUsage.IndexBuffer));
+			if(_VertexBuffer == null || _IndexBuffer == null) {
+				_VertexBuffer = factory.CreateBuffer(new BufferDescription((uint)(vertices.Length * Vertex.SizeInBytes), BufferUsage.VertexBuffer));
+				_IndexBuffer  = factory.CreateBuffer(new BufferDescription((uint)(indices.Length  * sizeof(ushort)), BufferUsage.IndexBuffer));
+			}
 			
 			//Fill the vertex buffer and make it viewable to the GPU
-			_RenderState.GraphicsDevice.UpdateBuffer(vertexBuffer, 0, vertices);
+			_RenderState.CommandList.UpdateBuffer(_VertexBuffer, 0, vertices);
 			//Fill the index buffer and make it viewable to the GPU
-			_RenderState.GraphicsDevice.UpdateBuffer(indexBuffer, 0, indices);
+			_RenderState.CommandList.UpdateBuffer(_IndexBuffer, 0, indices);
 			
 			_RenderState.CommandList.SetGraphicsResourceSet(1, texture.ResourceSet);
 			
 			//Set the vertex buffer for the test rectangle
-			_RenderState.CommandList.SetVertexBuffer(0, vertexBuffer);
+			_RenderState.CommandList.SetVertexBuffer(0, _VertexBuffer);
 			//Set the index buffer for the test rectangle
-			_RenderState.CommandList.SetIndexBuffer(indexBuffer, IndexFormat.UInt16);
+			_RenderState.CommandList.SetIndexBuffer(_IndexBuffer, IndexFormat.UInt16);
 			_RenderState.CommandList.DrawIndexed(
 				(uint)indices.Length,
 				1,

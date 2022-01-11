@@ -12,7 +12,7 @@ layout(set = 0, binding = 0) uniform ProjectionBuffer
 
 layout(location = 0) out vec4 fsin_Color;
 layout(location = 1) out vec2 fsin_texCoords;
-layout(location = 2) out int fsin_texIndex;
+layout(location = 2) flat out int fsin_texIndex;
 
 void main()
 {

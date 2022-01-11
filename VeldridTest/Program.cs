@@ -33,6 +33,7 @@ namespace VeldridTest {
 
 		private static bool _captureWanted;
 
+		public static Texture2D MissingTexture;
 		private static Texture2D _Tex1;
 		private static Texture2D _Tex2;
 		
@@ -90,8 +91,8 @@ namespace VeldridTest {
 				}
 				
 				Logger.Log(@event.Key.ToString());
-
-				DrawableObjects.Add(new DrawableTexture(new Vector2(random.Next(-1, (int)(RenderState.GraphicsDevice.SwapchainFramebuffer.Width)), random.Next(-1, (int)(RenderState.GraphicsDevice.SwapchainFramebuffer.Height))), @event.Key == Key.A ? _Tex1 : _Tex2) {
+			
+				DrawableObjects.Add(new DrawableTexture(new Vector3(random.Next(-1, (int)(RenderState.GraphicsDevice.SwapchainFramebuffer.Width)), random.Next(-1, (int)(RenderState.GraphicsDevice.SwapchainFramebuffer.Height)), 0), @event.Key == Key.A ? _Tex2 : _Tex1) {
 					Scale = new(0.1f)
 				});
 				
@@ -154,8 +155,19 @@ namespace VeldridTest {
 			//Get the graphics factory from the graphics device, this is used to create graphic resources 
 			RenderState.ResourceFactory = RenderState.GraphicsDevice.ResourceFactory;
 			
-			Texture2D.ResourceLayout = RenderState.ResourceFactory.CreateResourceLayout(new(new ResourceLayoutElementDescription("SurfaceTexture", ResourceKind.TextureReadOnly, ShaderStages.Fragment),
-																							new ResourceLayoutElementDescription("SurfaceSampler", ResourceKind.Sampler, ShaderStages.Fragment)));
+			Texture2D.ResourceLayout = RenderState.ResourceFactory.CreateResourceLayout(
+				new(
+				new ResourceLayoutElementDescription("SurfaceTexture", ResourceKind.TextureReadOnly, ShaderStages.Fragment),
+				new ResourceLayoutElementDescription("SurfaceSampler", ResourceKind.Sampler, ShaderStages.Fragment)));
+
+			ResourceLayoutElementDescription[] batchedElements = new ResourceLayoutElementDescription[RenderBatch.MAX_TEXTURES * 2];
+			
+			for (int i = 0; i < batchedElements.Length; i += 2) {
+				batchedElements[i]    = new ResourceLayoutElementDescription("SurfaceTexture", ResourceKind.TextureReadOnly, ShaderStages.Fragment);
+				batchedElements[i + 1] = new ResourceLayoutElementDescription("SurfaceSampler", ResourceKind.Sampler, ShaderStages.Fragment);
+			}
+			
+			Texture2D.BatchedResourceLayout = RenderState.ResourceFactory.CreateResourceLayout(new(batchedElements));
 			// Texture2D texture = new(new("obsoletethisgrab.png"), RenderState.GraphicsDevice.Aniso4xSampler, RenderState);
 			
 			_ProjectionBuffer = RenderState.ResourceFactory.CreateBuffer(new((uint)Unsafe.SizeOf<Matrix4x4>(), BufferUsage.UniformBuffer));
@@ -171,22 +183,35 @@ namespace VeldridTest {
 
 			//Defines how the vertex struct is layed out 
 			VertexLayoutDescription vertexLayout = new(
-				new VertexElementDescription("Position", VertexElementSemantic.Position, VertexElementFormat.Float2),
+				new VertexElementDescription("Position", VertexElementSemantic.Position, VertexElementFormat.Float3),
 				new VertexElementDescription("Color", VertexElementSemantic.Color, VertexElementFormat.Float4),
-				new VertexElementDescription("TexturePosition", VertexElementSemantic.TextureCoordinate, VertexElementFormat.Float2));
+				new VertexElementDescription("TexturePosition", VertexElementSemantic.TextureCoordinate, VertexElementFormat.Float2),
+				//Am i supposed to use VertexElementSemantic.TextureCoordinate here?
+				new VertexElementDescription("TextureId", VertexElementSemantic.TextureCoordinate, VertexElementFormat.Int1));
 
 			//Generates the vertex and fragment shaders
 			ShaderDescription vertexShaderDesc = new(
 				ShaderStages.Vertex,
-				Encoding.UTF8.GetBytes(ReadStringFromEmbeddedResource("TexturedVertexShader.glsl")),
+				Encoding.UTF8.GetBytes(ReadStringFromEmbeddedResource("ImmediateTexturedVertexShader.glsl")),
 				"main");
 			ShaderDescription fragmentShaderDesc = new(
 				ShaderStages.Fragment,
-				Encoding.UTF8.GetBytes(ReadStringFromEmbeddedResource("TexturedFragmentShader.glsl")),
+				Encoding.UTF8.GetBytes(ReadStringFromEmbeddedResource("ImmediateTexturedFragmentShader.glsl")),
+				"main");
+			
+			//Generates the vertex and fragment shaders
+			ShaderDescription batchedVertexShaderDesc = new(
+				ShaderStages.Vertex,
+				Encoding.UTF8.GetBytes(ReadStringFromEmbeddedResource("BatchedTexturedVertexShader.glsl")),
+				"main");
+			ShaderDescription batchedFragmentShaderDesc = new(
+				ShaderStages.Fragment,
+				Encoding.UTF8.GetBytes(ReadStringFromEmbeddedResource("BatchedTexturedFragmentShader.glsl")),
 				"main");
 
 			//Creates the shaders
 			RenderState.Shaders = RenderState.ResourceFactory.CreateFromSpirv(vertexShaderDesc, fragmentShaderDesc);
+			RenderState.BatchedShaders = RenderState.ResourceFactory.CreateFromSpirv(batchedVertexShaderDesc, batchedFragmentShaderDesc);
 
 			//Create a new pipeline description 
 			GraphicsPipelineDescription pipelineDescription = new() {
@@ -205,11 +230,11 @@ namespace VeldridTest {
 					false),
 				//Sets the primitive topology to a list of triangles
 				PrimitiveTopology = PrimitiveTopology.TriangleList,
-				ResourceLayouts   = new []{ projectionBufferResourceLayout, Texture2D.ResourceLayout },
+				ResourceLayouts   = new []{ projectionBufferResourceLayout, Texture2D.BatchedResourceLayout },
 				//Sets the shaders of the pipeline
 				ShaderSet         = new ShaderSetDescription(
 					new[] { vertexLayout },
-					RenderState.Shaders),
+					RenderState.BatchedShaders),
 				//Set the thing to render to to the screen
 				Outputs = RenderState.GraphicsDevice.SwapchainFramebuffer.OutputDescription
 			};
@@ -227,8 +252,10 @@ namespace VeldridTest {
 
 			_TestFont = _TestFontSystem.GetFont(100);
 			
-			_Tex1 = TextureLoader.LoadTexture("obsoletethisgrab.png", RenderState.GraphicsDevice.Aniso4xSampler, RenderState);
-			_Tex2 = TextureLoader.LoadTexture("2.png", RenderState.GraphicsDevice.Aniso4xSampler, RenderState);
+			_Tex1          = TextureLoader.LoadTexture("obsoletethisgrab.png", RenderState.GraphicsDevice.Aniso4xSampler, RenderState);
+			_Tex2          = TextureLoader.LoadTexture("3.png", RenderState.GraphicsDevice.Aniso4xSampler, RenderState);
+			MissingTexture = TextureLoader.LoadTexture("2.png", RenderState.GraphicsDevice.Aniso4xSampler, RenderState);
+			// MissingTexture = TextureLoader.LoadTexture("2.png", RenderState.GraphicsDevice.Aniso4xSampler, RenderState);
 
 		}
 
@@ -237,9 +264,9 @@ namespace VeldridTest {
 		}
 
 		public static void Draw(double lastFrameTime) {
-			Renderer.Begin(RenderState);
+			BatchedRenderer.Begin(RenderState);
 
-			Renderer.ClearColor(RgbaFloat.Black);
+			BatchedRenderer.ClearColor(RgbaFloat.Black);
 
 			foreach (Drawable drawable in DrawableObjects) {
 				drawable.Draw(RenderState);
@@ -247,7 +274,7 @@ namespace VeldridTest {
 			
 			// _TestFont.DrawText(_TextRenderer, (1000d / lastFrameTime).ToString(), new(10), Color.White);
 
-			Renderer.End();
+			BatchedRenderer.End();
 		}
 
 		public static string ReadStringFromEmbeddedResource(string name) {

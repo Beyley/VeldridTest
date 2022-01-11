@@ -8,6 +8,7 @@ namespace VeldridTest {
 		public ResourceFactory ResourceFactory;
 		
 		public Shader[]   Shaders;
+		public Shader[]   BatchedShaders;
 		public Pipeline   TexturedPipeline;
 		public Sdl2Window Window;
 		

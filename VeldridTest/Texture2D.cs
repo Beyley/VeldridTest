@@ -14,10 +14,12 @@ namespace VeldridTest {
 		public ImageSharpTexture RawTexture;
 		public Texture           Texture;
 		public ResourceSet       ResourceSet;
+		public Sampler           Sampler;
 		
 		public Point Size => new((int)this.Texture.Width, (int)this.Texture.Height);
 		
 		public static ResourceLayout ResourceLayout;
+		public static ResourceLayout BatchedResourceLayout;
 
 		public unsafe void SetData<T>(Rectangle bounds, ReadOnlySpan<T> data, RenderState renderState) where T : unmanaged {
 			fixed (T* ptr = data) {
@@ -29,6 +31,8 @@ namespace VeldridTest {
 		
 		public Texture2D(uint width, uint height, Sampler sampler, RenderState renderState) {
 			Profiler.StartCapture($"texture_create{Thread.CurrentThread.Name}");
+
+			this.Sampler = sampler;
 			
 			this.Texture = renderState.ResourceFactory.CreateTexture(TextureDescription.Texture2D(width, height, 1, 1, PixelFormat.R8_G8_B8_A8_UNorm, TextureUsage.Sampled | TextureUsage.RenderTarget));
 
@@ -45,6 +49,8 @@ namespace VeldridTest {
 		public Texture2D(ImageSharpTexture texture, Sampler sampler, RenderState renderState) {
 			Profiler.StartCapture($"texture_create{Thread.CurrentThread.Name}");
 			this.RawTexture = texture;
+			
+			this.Sampler = sampler;
 
 			this.Texture = this.RawTexture.CreateDeviceTexture(renderState.GraphicsDevice, renderState.ResourceFactory);
 

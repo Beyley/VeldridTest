@@ -1,10 +1,9 @@
 using System;
 using System.Numerics;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Veldrid;
 
 namespace VeldridTest {
-	public static class Renderer {
+	public static class ImmediateRenderer {
 		public static bool Begun { get; private set; }
 
 		private static RenderState _RenderState;
@@ -32,6 +31,8 @@ namespace VeldridTest {
 			_RenderState.CommandList.UpdateBuffer(_IndexBuffer, 0, INDICES);
 			
 			Begun = true;
+
+			_LastBoundTexture = null;
 		}
 
 		public static void ClearColor(RgbaFloat color) {
@@ -40,11 +41,11 @@ namespace VeldridTest {
 			_RenderState.CommandList.ClearColorTarget(0, color);
 		}
 
-		private static Texture2D _lastBoundTexture;
+		private static Texture2D _LastBoundTexture;
 
-		public static void DrawTexture(Texture2D texture, Vector2 position, RgbaFloat color, Point size, Rectangle? src = null) => DrawTexture(texture, position, color, new Vector2(size.X, size.Y), src);
+		public static void DrawTexture(Texture2D texture, Vector3 position, RgbaFloat color, Point size, Rectangle? src = null) => DrawTexture(texture, position, color, new Vector2(size.X, size.Y), src);
 
-		public static void DrawTexture(Texture2D texture, Vector2 position, RgbaFloat color, System.Drawing.Point size, Rectangle? src = null) => DrawTexture(texture, position, color, new Vector2(size.X, size.Y), src);
+		public static void DrawTexture(Texture2D texture, Vector3 position, RgbaFloat color, System.Drawing.Point size, Rectangle? src = null) => DrawTexture(texture, position, color, new Vector2(size.X, size.Y), src);
 		
 		private static DeviceBuffer _IndexBuffer;
 		private static DeviceBuffer _VertexBuffer;
@@ -58,11 +59,13 @@ namespace VeldridTest {
 
 		private static readonly Vertex[] vertices = new Vertex[4];
 		
-		public static void DrawTexture(Texture2D texture, Vector2 position, RgbaFloat color, Vector2 size, Rectangle? src = null) {
+		public static void DrawTexture(Texture2D texture, Vector3 position, RgbaFloat color, Vector2 size, Rectangle? src = null) {
 			Vector2 texBL = new(0, 1);
 			Vector2 texBR = new(1, 1);
 			Vector2 texTR = new(1, 0);
 			Vector2 texTL = new(0, 0);
+
+			Vector3 size3 = new(size, 0);
 
 			if (src.HasValue) {
 				Vector2 texelSize = new(1f / texture.Size.X, 1f / texture.Size.Y);
@@ -74,26 +77,22 @@ namespace VeldridTest {
 			}
 			
 			//Bottom left
-			vertices[0] = new(new Vector2(position.X, position.Y + size.Y), color, texBL);
+			vertices[0] = new(new Vector3(position.X, position.Y + size.Y, position.Z), color, texBL);
 			//Bottom right
-			vertices[1] = new(position + size, color, texBR);
+			vertices[1] = new(position + size3, color, texBR);
 			//Top right
-			vertices[2] = new(new Vector2(position.X + size.X, position.Y), color, texTR);
+			vertices[2] = new(new Vector3(position.X + size.X, position.Y, position.Z), color, texTR);
 			//Top left
 			vertices[3] = new(position, color, texTL);
 
-			ResourceFactory factory = _RenderState.GraphicsDevice.ResourceFactory;
-
-			if(_VertexBuffer == null) {
-				_VertexBuffer = factory.CreateBuffer(new BufferDescription((uint)(vertices.Length * Vertex.SizeInBytes), BufferUsage.VertexBuffer));
-			}
+			_VertexBuffer ??= _RenderState.ResourceFactory.CreateBuffer(new BufferDescription((uint)(vertices.Length * Vertex.SizeInBytes), BufferUsage.VertexBuffer));
 			
 			//Fill the vertex buffer and make it viewable to the GPU
 			_RenderState.CommandList.UpdateBuffer(_VertexBuffer, 0, vertices);
 
-			if (texture != _lastBoundTexture) {
+			if (texture != _LastBoundTexture) {
 				_RenderState.CommandList.SetGraphicsResourceSet(1, texture.ResourceSet);
-				_lastBoundTexture = texture;
+				_LastBoundTexture = texture;
 			}
 			
 			//Set the vertex buffer for the test rectangle

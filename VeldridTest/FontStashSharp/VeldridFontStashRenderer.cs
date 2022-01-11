@@ -26,7 +26,7 @@ namespace VeldridTest.FontStashSharp {
 
 			Vector2 size = new(src.Value.Width * scale.X, src.Value.Height * scale.Y);
 			
-			Renderer.DrawTexture(texture2D, pos - origin, convertedColor, size, new(src.Value.X, src.Value.Y, src.Value.Width, src.Value.Height));
+			BatchedRenderer.DrawTexture(texture2D, new(pos - origin, depth), convertedColor, size, new(src.Value.X, src.Value.Y, src.Value.Width, src.Value.Height));
 		}
 		
 		public ITexture2DManager TextureManager {

@@ -29,10 +29,16 @@
     </ItemGroup>
 
     <ItemGroup>
-      <EmbeddedResource Include="TexturedFragmentShader.glsl">
+      <EmbeddedResource Include="BatchedTexturedFragmentShader.glsl">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </EmbeddedResource>
-      <EmbeddedResource Include="TexturedVertexShader.glsl">
+      <EmbeddedResource Include="BatchedTexturedVertexShader.glsl">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <EmbeddedResource Include="ImmediateTexturedFragmentShader.glsl">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <EmbeddedResource Include="ImmediateTexturedVertexShader.glsl">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </EmbeddedResource>
       <EmbeddedResource Include="BasicFragmentShader.glsl">

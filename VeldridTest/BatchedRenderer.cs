@@ -45,14 +45,14 @@ namespace VeldridTest {
 			if (!Begun) throw new Exception("Renderer not begun!");
 			
 			_RenderState.CommandList.ClearColorTarget(0, color);
-			Console.WriteLine("clearing");
 		}
-
-
+		
 		public static void DrawTexture(Texture2D texture, Vector3 position, RgbaFloat color, Point size, Rectangle? src = null) => DrawTexture(texture, position, color, new Vector2(size.X, size.Y), src);
 
 		public static void DrawTexture(Texture2D texture, Vector3 position, RgbaFloat color, System.Drawing.Point size, Rectangle? src = null) => DrawTexture(texture, position, color, new Vector2(size.X, size.Y), src);
 
+		private static readonly Vertex[] VERTICES = new Vertex[4];
+		
 		public static void DrawTexture(Texture2D texture, Vector3 position, RgbaFloat color, Vector2 size, Rectangle? src = null) {
 			Vector2 texBL = new(0, 1);
 			Vector2 texBR = new(1, 1);
@@ -70,25 +70,23 @@ namespace VeldridTest {
 				texTL = new(src.Value.X     * texelSize.X, src.Value.Y      * texelSize.Y);
 			}
 
-			Vertex[] vertices = new Vertex[4];
-			
 			//Bottom left
-			vertices[0] = new(new Vector3(position.X, position.Y + size.Y, position.Z), color, texBL);
+			VERTICES[0] = new(new Vector3(position.X, position.Y + size.Y, position.Z), color, texBL);
 			//Bottom right
-			vertices[1] = new(position + size3, color, texBR);
+			VERTICES[1] = new(position + size3, color, texBR);
 			//Top right
-			vertices[2] = new(new Vector3(position.X + size.X, position.Y, position.Z), color, texTR);
+			VERTICES[2] = new(new Vector3(position.X + size.X, position.Y, position.Z), color, texTR);
 			//Top left
-			vertices[3] = new(position, color, texTL);
+			VERTICES[3] = new(position, color, texTL);
 
 			RenderBatch batch;
-			if (UsedBatches() == 0) {
+			if (CreatedBatches() == 0) {
 				batch = CreateNewRenderBatch();
 			}
 			else {
 				RenderBatch found = null;
 				
-				for (int i = 0; i < UsedBatches(); i++) {
+				for (int i = 0; i < CreatedBatches(); i++) {
 					RenderBatch batchI = _ActiveBatches[i];
 
 					//Check if there is space, if there is none, then continue iterating
@@ -108,7 +106,7 @@ namespace VeldridTest {
 				}
 			}
 
-			batch.BatchTexturedQuad(vertices, texture);
+			batch.BatchTexturedQuad(VERTICES, texture);
 		}
 
 		/// <summary>
@@ -116,7 +114,7 @@ namespace VeldridTest {
 		/// </summary>
 		/// <returns></returns>
 		private static RenderBatch CreateNewRenderBatch() {
-			int used = UsedBatches();
+			int used = CreatedBatches();
 
 			if (used == BatchCount) {
 				BatchCount *= 2;
@@ -126,7 +124,7 @@ namespace VeldridTest {
 			return _ActiveBatches[used] = new();
 		}
 
-		private static int UsedBatches() {
+		private static int CreatedBatches() {
 			int used = 0;
 
 			for (int i = 0; i < _ActiveBatches.Length; i++) {
@@ -146,13 +144,12 @@ namespace VeldridTest {
 				RenderBatch batch = _ActiveBatches[i];
 				
 				if (batch == null) continue;
-				Console.WriteLine($"drawing {i}");
 
 				_VertexBuffer ??= _RenderState.ResourceFactory.CreateBuffer(new BufferDescription((uint)(batch.Vertexes.Length * Vertex.SizeInBytes), BufferUsage.VertexBuffer));
 				_IndexBuffer  ??= _RenderState.ResourceFactory.CreateBuffer(new BufferDescription((uint)(batch.Indicies.Length * sizeof(ushort)), BufferUsage.IndexBuffer));
 				
-				_RenderState.GraphicsDevice.UpdateBuffer(_VertexBuffer, 0, batch.Vertexes);
-				_RenderState.GraphicsDevice.UpdateBuffer(_IndexBuffer, 0, batch.Indicies);
+				_RenderState.CommandList.UpdateBuffer(_VertexBuffer, 0, batch.Vertexes);
+				_RenderState.CommandList.UpdateBuffer(_IndexBuffer, 0, batch.Indicies);
 				
 				for (int iR = 0; iR < resources.Length; iR += 2) {
 					resources[iR]    = batch.Textures[iR / 2] == null ? Program.MissingTexture.Texture : batch.Textures[iR / 2].Texture;
@@ -183,10 +180,6 @@ namespace VeldridTest {
 			Begun = false;
 
 			Flush();
-
-			for (int i = 0; i < UsedBatches(); i++) {
-				Console.WriteLine($"i:{i} canfit:{_ActiveBatches[i].CanFitNew()} used:{_ActiveBatches[i].UsedVertexes / 6}");
-			}
 			
 			_RenderState.CommandList.End();
 			
@@ -194,7 +187,10 @@ namespace VeldridTest {
 			
 			_RenderState.GraphicsDevice.SwapBuffers();
 
-			_ActiveBatches = new RenderBatch[BatchCount];
+			// _ActiveBatches = new RenderBatch[BatchCount];
+			for (int i = 0; i < _ActiveBatches.Length; i++) {
+				_ActiveBatches[i]?.Clear();
+			}
 		}
 	}
 }

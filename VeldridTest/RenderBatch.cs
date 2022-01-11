@@ -12,8 +12,8 @@ namespace VeldridTest {
 		
 		public int UsedVertexes { get; private set; }
 		public int UsedIndicies { get; private set; }
-		
-		private readonly ushort[] _baseIndices = { 
+
+		private ushort[] _baseIndices = { 
 			//Tri 1
 			0, 1, 2,
 			//Tri 2
@@ -67,6 +67,17 @@ namespace VeldridTest {
 			}
 
 			return -1;
+		}
+
+		public void Clear() {
+			this.UsedIndicies = 0;
+			this.UsedVertexes = 0;
+			this._baseIndices = new ushort[] {
+				//Tri 1
+				0, 1, 2,
+				//Tri 2
+				2, 3, 0
+			};
 		}
 	}
 }

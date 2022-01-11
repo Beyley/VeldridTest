@@ -141,9 +141,12 @@ namespace VeldridTest {
 		private static BindableResource[] resources = new BindableResource[RenderBatch.MAX_TEXTURES * 2];
 
 		private static void Flush() {
-			for (int i = 0; i < UsedBatches(); i++) {
+			for (int i = 0; i < _ActiveBatches.Length; i++) {
 				RenderBatch batch = _ActiveBatches[i];
 				
+				if (batch == null) continue;
+				Console.WriteLine($"drawing {i}");
+
 				_VertexBuffer ??= _RenderState.ResourceFactory.CreateBuffer(new BufferDescription((uint)(batch.Vertexes.Length * Vertex.SizeInBytes), BufferUsage.VertexBuffer));
 				_IndexBuffer  ??= _RenderState.ResourceFactory.CreateBuffer(new BufferDescription((uint)(batch.Indicies.Length * sizeof(ushort)), BufferUsage.IndexBuffer));
 				
@@ -179,6 +182,10 @@ namespace VeldridTest {
 			Begun = false;
 
 			Flush();
+
+			for (int i = 0; i < UsedBatches(); i++) {
+				Console.WriteLine($"i:{i} canfit:{_ActiveBatches[i].CanFitNew()} used:{_ActiveBatches[i].UsedVertexes / 6}");
+			}
 			
 			_RenderState.CommandList.End();
 			

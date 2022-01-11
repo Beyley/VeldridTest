@@ -173,6 +173,8 @@ namespace VeldridTest {
 					0,
 					0,
 					0);
+				
+				resourceSet.Dispose();
 			}
 		}
 

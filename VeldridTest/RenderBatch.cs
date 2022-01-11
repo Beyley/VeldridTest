@@ -72,12 +72,13 @@ namespace VeldridTest {
 		public void Clear() {
 			this.UsedIndicies = 0;
 			this.UsedVertexes = 0;
-			this._baseIndices = new ushort[] {
-				//Tri 1
-				0, 1, 2,
-				//Tri 2
-				2, 3, 0
-			};
+
+			this._baseIndices[0] = 0;
+			this._baseIndices[1] = 1;
+			this._baseIndices[2] = 2;
+			this._baseIndices[3] = 2;
+			this._baseIndices[4] = 3;
+			this._baseIndices[5] = 0;
 		}
 	}
 }

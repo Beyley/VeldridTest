@@ -45,6 +45,7 @@ namespace VeldridTest {
 			if (!Begun) throw new Exception("Renderer not begun!");
 			
 			_RenderState.CommandList.ClearColorTarget(0, color);
+			Console.WriteLine("clearing");
 		}
 
 

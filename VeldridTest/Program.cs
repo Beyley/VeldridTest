@@ -64,7 +64,7 @@ namespace VeldridTest {
 			graphicsDeviceOptions.SyncToVerticalBlank = false;
 			
 			//Create a graphics device that we will render to
-			RenderState.GraphicsDevice = VeldridStartup.CreateGraphicsDevice(RenderState.Window, graphicsDeviceOptions, GraphicsBackend.Vulkan);
+			RenderState.GraphicsDevice = VeldridStartup.CreateGraphicsDevice(RenderState.Window, graphicsDeviceOptions, GraphicsBackend.OpenGL);
 
 			//Log the backend used
 			Logger.Log($"Window created with the {RenderState.GraphicsDevice.BackendType.ToString()} backend!");
@@ -163,8 +163,8 @@ namespace VeldridTest {
 			ResourceLayoutElementDescription[] batchedElements = new ResourceLayoutElementDescription[RenderBatch.MAX_TEXTURES * 2];
 			
 			for (int i = 0; i < batchedElements.Length; i += 2) {
-				batchedElements[i]    = new ResourceLayoutElementDescription("SurfaceTexture", ResourceKind.TextureReadOnly, ShaderStages.Fragment);
-				batchedElements[i + 1] = new ResourceLayoutElementDescription("SurfaceSampler", ResourceKind.Sampler, ShaderStages.Fragment);
+				batchedElements[i]    = new ResourceLayoutElementDescription($"SurfaceTexture_{i/2}", ResourceKind.TextureReadOnly, ShaderStages.Fragment);
+				batchedElements[i + 1] = new ResourceLayoutElementDescription($"SurfaceSampler_{i/2}", ResourceKind.Sampler, ShaderStages.Fragment);
 			}
 			
 			Texture2D.BatchedResourceLayout = RenderState.ResourceFactory.CreateResourceLayout(new(batchedElements));

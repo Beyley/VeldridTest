@@ -4,11 +4,9 @@ using System.Diagnostics;
 using System.IO;
 using System.Numerics;
 using System.Reflection;
-using System.Reflection.Metadata.Ecma335;
 using System.Runtime.CompilerServices;
 using System.Text;
 using FontStashSharp;
-using Gdk;
 using Kettu;
 using Veldrid;
 using Veldrid.SPIRV;
@@ -57,14 +55,15 @@ namespace VeldridTest {
 			GraphicsDeviceOptions graphicsDeviceOptions = new() {
 				PreferStandardClipSpaceYDirection = true,
 				PreferDepthRangeZeroToOne         = true,
-				ResourceBindingModel              = ResourceBindingModel.Improved
+				ResourceBindingModel              = ResourceBindingModel.Improved,
+				SwapchainDepthFormat              = PixelFormat.D24_UNorm_S8_UInt
 			};
 
 			// graphicsDeviceOptions.Debug               = true;
 			graphicsDeviceOptions.SyncToVerticalBlank = false;
 			
 			//Create a graphics device that we will render to
-			RenderState.GraphicsDevice = VeldridStartup.CreateGraphicsDevice(RenderState.Window, graphicsDeviceOptions, GraphicsBackend.OpenGL);
+			RenderState.GraphicsDevice = VeldridStartup.CreateGraphicsDevice(RenderState.Window, graphicsDeviceOptions, GraphicsBackend.Vulkan);
 
 			//Log the backend used
 			Logger.Log($"Window created with the {RenderState.GraphicsDevice.BackendType.ToString()} backend!");
@@ -91,11 +90,13 @@ namespace VeldridTest {
 				}
 				
 				Logger.Log(@event.Key.ToString());
-			
-				DrawableObjects.Add(new DrawableTexture(new Vector3(random.Next(-1, (int)(RenderState.GraphicsDevice.SwapchainFramebuffer.Width)), random.Next(-1, (int)(RenderState.GraphicsDevice.SwapchainFramebuffer.Height)), 0), @event.Key == Key.A ? _Tex2 : _Tex1) {
-					Scale = new(0.1f)
-				});
-				
+
+				for (int i = 0; i < 256; i++) {
+					DrawableObjects.Add(new DrawableTexture(new Vector3(random.Next(-1, (int)(RenderState.GraphicsDevice.SwapchainFramebuffer.Width)), random.Next(-1, (int)(RenderState.GraphicsDevice.SwapchainFramebuffer.Height)), 0.5f), @event.Key == Key.A ? _Tex2 : _Tex1) {
+						Scale = new(0.1f),
+					});
+				}
+
 				// xtest += 100;
 			};
 
@@ -133,7 +134,18 @@ namespace VeldridTest {
 		}
 
 		private static void UpdateProjectionBuffer() {
-			RenderState.GraphicsDevice.UpdateBuffer(_ProjectionBuffer, 0, Matrix4x4.CreateOrthographicOffCenter(0, RenderState.Window.Width, 0, RenderState.Window.Height, -1f, 1f));
+			RenderState.GraphicsDevice.UpdateBuffer(
+				_ProjectionBuffer, 
+				0, 
+				Matrix4x4.CreateOrthographicOffCenter(
+					0, 
+					RenderState.Window.Width, 
+					0, 
+					RenderState.Window.Height, 
+					-1f, 
+					1f
+				)
+			);
 			RenderState.GraphicsDevice.ResizeMainWindow((uint)RenderState.Window.Width, (uint)RenderState.Window.Height);
 		}
 
@@ -210,8 +222,8 @@ namespace VeldridTest {
 				"main");
 
 			//Creates the shaders
-			RenderState.Shaders = RenderState.ResourceFactory.CreateFromSpirv(vertexShaderDesc, fragmentShaderDesc);
-			RenderState.BatchedShaders = RenderState.ResourceFactory.CreateFromSpirv(batchedVertexShaderDesc, batchedFragmentShaderDesc);
+			RenderState.Shaders        = ShaderCompiler.CompileShaderPair(RenderState, vertexShaderDesc, fragmentShaderDesc);
+			RenderState.BatchedShaders = ShaderCompiler.CompileShaderPair(RenderState, batchedVertexShaderDesc, batchedFragmentShaderDesc);
 
 			//Create a new pipeline description 
 			GraphicsPipelineDescription pipelineDescription = new() {
@@ -263,6 +275,7 @@ namespace VeldridTest {
 			// DrawableObjects.ForEach(x => x.Position.X = ((Stopwatch.GetTimestamp() / (float)Stopwatch.Frequency) % 1) * 1000);
 		}
 
+		private static int last = 0;
 		public static void Draw(double lastFrameTime) {
 			BatchedRenderer.Begin(RenderState);
 
@@ -272,9 +285,12 @@ namespace VeldridTest {
 				drawable.Draw(RenderState);
 			}
 			
-			// _TestFont.DrawText(_TextRenderer, (1000d / lastFrameTime).ToString(), new(10), Color.White);
+			_TestFont.DrawText(_TextRenderer, last.ToString(), new(10), Color.White, 1f);
+			_TestFont.DrawText(_TextRenderer, DrawableObjects.Count.ToString(), new(10, 120), Color.White, 1f);
 
 			BatchedRenderer.End();
+
+			last = BatchedRenderer.UsedBatches;
 		}
 
 		public static string ReadStringFromEmbeddedResource(string name) {

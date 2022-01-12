@@ -4,7 +4,7 @@ namespace VeldridTest {
 	public class RenderBatch {
 		public const int MAX_TEXTURES = 8;
 		
-		public const int MAX_COUNT    = 2;
+		public const int MAX_COUNT    = 512;
 
 		public readonly Texture2D[] Textures = new Texture2D[MAX_TEXTURES];
 		public readonly Vertex[]    Vertexes = new Vertex[4 * MAX_COUNT];

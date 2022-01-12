@@ -13,6 +13,8 @@ namespace VeldridTest {
 		private static int BatchCount = 16;
 		
 		private static RenderBatch[] _ActiveBatches = new RenderBatch[BatchCount];
+		
+		public static int UsedBatches { get; private set; }
 
 		public static void Begin(RenderState renderState) {
 			if (Begun) throw new Exception("Renderer already begun!");
@@ -20,6 +22,8 @@ namespace VeldridTest {
 			_RenderState = renderState;
 			
 			_RenderState.CommandList.Begin();
+			
+			// Console.WriteLine(_RenderState.GraphicsDevice.SwapchainFramebuffer.DepthTarget.HasValue);
 			
 			//Set the framebuffer to render to
 			_RenderState.CommandList.SetFramebuffer(_RenderState.GraphicsDevice.SwapchainFramebuffer);
@@ -39,12 +43,15 @@ namespace VeldridTest {
 			Begun = true;
 
 			// _LastBoundTexture = null;
+
+			UsedBatches = 0;
 		}
 
 		public static void ClearColor(RgbaFloat color) {
 			if (!Begun) throw new Exception("Renderer not begun!");
 			
 			_RenderState.CommandList.ClearColorTarget(0, color);
+			_RenderState.CommandList.ClearDepthStencil(1);
 		}
 		
 		public static void DrawTexture(Texture2D texture, Vector3 position, RgbaFloat color, Point size, Rectangle? src = null) => DrawTexture(texture, position, color, new Vector2(size.X, size.Y), src);
@@ -191,6 +198,7 @@ namespace VeldridTest {
 
 			// _ActiveBatches = new RenderBatch[BatchCount];
 			for (int i = 0; i < _ActiveBatches.Length; i++) {
+				if (_ActiveBatches[i] != null && _ActiveBatches[i].UsedIndicies != 0) UsedBatches++;
 				_ActiveBatches[i]?.Clear();
 			}
 		}

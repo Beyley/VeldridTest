@@ -16,7 +16,7 @@ layout(location = 2) flat out int fsin_texIndex;
 
 void main()
 {
-    gl_Position = projectionMatrix * vec4(Position, 1);
+    gl_Position = projectionMatrix * vec4(Position.x, Position.y, 0, 1);
 
 	gl_Position.y *= -1;
 

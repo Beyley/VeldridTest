@@ -9,5 +9,7 @@ namespace VeldridTest {
 		
 		public abstract void Draw(RenderState renderState);
 		public abstract void Dispose();
+
+		public float LastDepth;
 	}
 }

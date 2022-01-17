@@ -12,6 +12,7 @@ namespace VeldridTest {
 		
 		public int UsedVertexes { get; private set; }
 		public int UsedIndicies { get; private set; }
+		public int UsedTextures { get; private set; }
 
 		private ushort[] _baseIndices = { 
 			//Tri 1
@@ -54,14 +55,15 @@ namespace VeldridTest {
 
 		public int GetTextureId(Texture2D tex) {
 			for (int i = 0; i < this.Textures.Length; i++) {
-				Texture2D texture2D = this.Textures[i];
+				Texture2D texI = this.Textures[i];
 
-				if (tex == texture2D) {
+				if (tex == texI) {
 					return i;
 				}
 				
-				if (texture2D == null) {
+				if (texI == null) {
 					this.Textures[i] = tex;
+					this.UsedTextures++;
 					return i;
 				}
 			}

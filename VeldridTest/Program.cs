@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.Diagnostics;
 using System.IO;
 using System.Numerics;
@@ -55,8 +57,7 @@ namespace VeldridTest {
 			GraphicsDeviceOptions graphicsDeviceOptions = new() {
 				PreferStandardClipSpaceYDirection = true,
 				PreferDepthRangeZeroToOne         = true,
-				ResourceBindingModel              = ResourceBindingModel.Improved,
-				SwapchainDepthFormat              = PixelFormat.D24_UNorm_S8_UInt
+				ResourceBindingModel              = ResourceBindingModel.Improved
 			};
 
 			// graphicsDeviceOptions.Debug               = true;
@@ -91,8 +92,8 @@ namespace VeldridTest {
 				
 				Logger.Log(@event.Key.ToString());
 
-				for (int i = 0; i < 256; i++) {
-					DrawableObjects.Add(new DrawableTexture(new Vector3(random.Next(-1, (int)(RenderState.GraphicsDevice.SwapchainFramebuffer.Width)), random.Next(-1, (int)(RenderState.GraphicsDevice.SwapchainFramebuffer.Height)), 0.5f), @event.Key == Key.A ? _Tex2 : _Tex1) {
+				for (int i = 0; i < 16; i++) {
+					DrawableObjects.Add(new DrawableTexture(new Vector3(random.Next(-1, (int)(RenderState.GraphicsDevice.SwapchainFramebuffer.Width)), random.Next(-1, (int)(RenderState.GraphicsDevice.SwapchainFramebuffer.Height)), (float)random.NextDouble()), @event.Key == Key.A ? _Tex2 : _Tex1) {
 						Scale = new(0.1f),
 					});
 				}
@@ -169,8 +170,15 @@ namespace VeldridTest {
 			
 			Texture2D.ResourceLayout = RenderState.ResourceFactory.CreateResourceLayout(
 				new(
-				new ResourceLayoutElementDescription("SurfaceTexture", ResourceKind.TextureReadOnly, ShaderStages.Fragment),
-				new ResourceLayoutElementDescription("SurfaceSampler", ResourceKind.Sampler, ShaderStages.Fragment)));
+					new ResourceLayoutElementDescription("SurfaceTexture", ResourceKind.TextureReadOnly, ShaderStages.Fragment),
+					new ResourceLayoutElementDescription("SurfaceSampler", ResourceKind.Sampler, ShaderStages.Fragment)));
+
+			for (int i = 0; i < 8; i++) {
+				Texture2D.BatchedResourceLayouts[i] = RenderState.ResourceFactory.CreateResourceLayout(
+					new(
+					new ResourceLayoutElementDescription($"SurfaceTexture_{i}", ResourceKind.TextureReadOnly, ShaderStages.Fragment),
+						new ResourceLayoutElementDescription("SurfaceSampler_{i}", ResourceKind.Sampler, ShaderStages.Fragment)));
+			}
 
 			ResourceLayoutElementDescription[] batchedElements = new ResourceLayoutElementDescription[RenderBatch.MAX_TEXTURES * 2];
 			
@@ -242,7 +250,16 @@ namespace VeldridTest {
 					false),
 				//Sets the primitive topology to a list of triangles
 				PrimitiveTopology = PrimitiveTopology.TriangleList,
-				ResourceLayouts   = new []{ projectionBufferResourceLayout, Texture2D.BatchedResourceLayout },
+				ResourceLayouts   = new []{ projectionBufferResourceLayout, 
+					Texture2D.BatchedResourceLayouts[0],
+					Texture2D.BatchedResourceLayouts[1],
+					Texture2D.BatchedResourceLayouts[2],
+					Texture2D.BatchedResourceLayouts[3],
+					Texture2D.BatchedResourceLayouts[4],
+					Texture2D.BatchedResourceLayouts[5],
+					Texture2D.BatchedResourceLayouts[6],
+					Texture2D.BatchedResourceLayouts[7]
+				},
 				//Sets the shaders of the pipeline
 				ShaderSet         = new ShaderSetDescription(
 					new[] { vertexLayout },
@@ -275,13 +292,25 @@ namespace VeldridTest {
 			// DrawableObjects.ForEach(x => x.Position.X = ((Stopwatch.GetTimestamp() / (float)Stopwatch.Frequency) % 1) * 1000);
 		}
 
+		private static bool _SortNeeded;
+
 		private static int last = 0;
 		public static void Draw(double lastFrameTime) {
 			BatchedRenderer.Begin(RenderState);
 
 			BatchedRenderer.ClearColor(RgbaFloat.Black);
 
+			if (_SortNeeded) {
+				DrawableObjects.Sort((x1, x2) => x1.Position.Z.CompareTo(x2.Position.Z));
+				_SortNeeded = false;
+			}
+
 			foreach (Drawable drawable in DrawableObjects) {
+				if (drawable.LastDepth != drawable.Position.Z)
+					_SortNeeded = true;
+
+				drawable.LastDepth = drawable.Position.Z;
+				
 				drawable.Draw(RenderState);
 			}
 			

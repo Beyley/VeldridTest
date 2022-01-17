@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Drawing.Drawing2D;
 using System.Numerics;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Veldrid;
@@ -51,7 +52,7 @@ namespace VeldridTest {
 			if (!Begun) throw new Exception("Renderer not begun!");
 			
 			_RenderState.CommandList.ClearColorTarget(0, color);
-			_RenderState.CommandList.ClearDepthStencil(1);
+			// _RenderState.CommandList.ClearDepthStencil(1);
 		}
 		
 		public static void DrawTexture(Texture2D texture, Vector3 position, RgbaFloat color, Point size, Rectangle? src = null) => DrawTexture(texture, position, color, new Vector2(size.X, size.Y), src);
@@ -85,23 +86,26 @@ namespace VeldridTest {
 			VERTICES[2] = new(new Vector3(position.X + size.X, position.Y, position.Z), color, texTR);
 			//Top left
 			VERTICES[3] = new(position, color, texTL);
-
+			
 			RenderBatch batch;
-			if (CreatedBatches() == 0) {
+			if (CreatedBatches == 0) {
 				batch = CreateNewRenderBatch();
 			}
 			else {
 				RenderBatch found = null;
-				
-				for (int i = 0; i < CreatedBatches(); i++) {
-					RenderBatch batchI = _ActiveBatches[i];
 
-					//Check if there is space, if there is none, then continue iterating
-					if (batchI.GetTextureId(texture) == -1 || !batchI.CanFitNew())
+				for (int i = 0; i < CreatedBatches; i++) {
+					RenderBatch b = _ActiveBatches[i];
+
+					if (!b.CanFitNew())
 						continue;
-
-					found = batchI;
+					
+					found = b;
+					break;
 				}
+				
+				// if (_ActiveBatches[CreatedBatches - 1].CanFitNew())
+					// found = _ActiveBatches[CreatedBatches - 1];
 
 				//If no batch was found, create a new one
 				if (found == null) {
@@ -121,25 +125,18 @@ namespace VeldridTest {
 		/// </summary>
 		/// <returns></returns>
 		private static RenderBatch CreateNewRenderBatch() {
-			int used = CreatedBatches();
+			int used = CreatedBatches;
 
 			if (used == BatchCount) {
 				BatchCount *= 2;
 				Array.Resize(ref _ActiveBatches, BatchCount);
 			}
-			
+
+			CreatedBatches++;
 			return _ActiveBatches[used] = new();
 		}
 
-		private static int CreatedBatches() {
-			int used = 0;
-
-			for (int i = 0; i < _ActiveBatches.Length; i++) {
-				if (_ActiveBatches[i] != null) used++;
-			}
-
-			return used;
-		}
+		private static int CreatedBatches;
 		
 		private static DeviceBuffer _IndexBuffer;
 		private static DeviceBuffer _VertexBuffer;
@@ -157,19 +154,10 @@ namespace VeldridTest {
 				
 				_RenderState.CommandList.UpdateBuffer(_VertexBuffer, 0, batch.Vertexes);
 				_RenderState.CommandList.UpdateBuffer(_IndexBuffer, 0, batch.Indicies);
-				
-				for (int iR = 0; iR < resources.Length; iR += 2) {
-					resources[iR]    = batch.Textures[iR / 2] == null ? Program.MissingTexture.Texture : batch.Textures[iR / 2].Texture;
-					resources[iR +1] = batch.Textures[iR / 2] == null ? Program.MissingTexture.Sampler : batch.Textures[iR / 2].Sampler;
+
+				for (int i2 = 0; i2 < batch.UsedTextures; i2++) {
+					_RenderState.CommandList.SetGraphicsResourceSet((uint)i2 + 1, batch.Textures[i2].GetResourceSet(_RenderState, i2));
 				}
-
-				ResourceSet resourceSet = _RenderState.ResourceFactory.CreateResourceSet(
-					new ResourceSetDescription(
-						Texture2D.BatchedResourceLayout,
-						resources)
-				);
-
-				_RenderState.CommandList.SetGraphicsResourceSet(1, resourceSet);
 				
 				_RenderState.CommandList.SetVertexBuffer(0, _VertexBuffer);
 				_RenderState.CommandList.SetIndexBuffer(_IndexBuffer, IndexFormat.UInt16);
@@ -181,7 +169,7 @@ namespace VeldridTest {
 					0,
 					0);
 				
-				resourceSet.Dispose();
+				// resourceSet.Dispose();
 			}
 		}
 
@@ -189,12 +177,15 @@ namespace VeldridTest {
 			Begun = false;
 
 			Flush();
+
 			
 			_RenderState.CommandList.End();
 			
 			_RenderState.GraphicsDevice.SubmitCommands(_RenderState.CommandList);
 			
 			_RenderState.GraphicsDevice.SwapBuffers();
+			
+			// CreatedBatches = 0;
 
 			// _ActiveBatches = new RenderBatch[BatchCount];
 			for (int i = 0; i < _ActiveBatches.Length; i++) {

@@ -8,20 +8,20 @@ layout(location = 0) out vec4 fsout_Color;
 
 layout(set = 1, binding = 0) uniform texture2D SurfaceTexture_0;
 layout(set = 1, binding = 1) uniform sampler SurfaceSampler_0;
-layout(set = 1, binding = 2) uniform texture2D SurfaceTexture_1;
-layout(set = 1, binding = 3) uniform sampler SurfaceSampler_1;
-layout(set = 1, binding = 4) uniform texture2D SurfaceTexture_2;
-layout(set = 1, binding = 5) uniform sampler SurfaceSampler_2;
-layout(set = 1, binding = 6) uniform texture2D SurfaceTexture_3;
-layout(set = 1, binding = 7) uniform sampler SurfaceSampler_3;
-layout(set = 1, binding = 8) uniform texture2D SurfaceTexture_4;
-layout(set = 1, binding = 9) uniform sampler SurfaceSampler_4;
-layout(set = 1, binding = 10) uniform texture2D SurfaceTexture_5;
-layout(set = 1, binding = 11) uniform sampler SurfaceSampler_5;
-layout(set = 1, binding = 12) uniform texture2D SurfaceTexture_6;
-layout(set = 1, binding = 13) uniform sampler SurfaceSampler_6;
-layout(set = 1, binding = 14) uniform texture2D SurfaceTexture_7;
-layout(set = 1, binding = 15) uniform sampler SurfaceSampler_7;
+layout(set = 2, binding = 0) uniform texture2D SurfaceTexture_1;
+layout(set = 2, binding = 1) uniform sampler SurfaceSampler_1;
+layout(set = 3, binding = 0) uniform texture2D SurfaceTexture_2;
+layout(set = 3, binding = 1) uniform sampler SurfaceSampler_2;
+layout(set = 4, binding = 0) uniform texture2D SurfaceTexture_3;
+layout(set = 4, binding = 1) uniform sampler SurfaceSampler_3;
+layout(set = 5, binding = 0) uniform texture2D SurfaceTexture_4;
+layout(set = 5, binding = 1) uniform sampler SurfaceSampler_4;
+layout(set = 6, binding = 0) uniform texture2D SurfaceTexture_5;
+layout(set = 6, binding = 1) uniform sampler SurfaceSampler_5;
+layout(set = 7, binding = 0) uniform texture2D SurfaceTexture_6;
+layout(set = 7, binding = 1) uniform sampler SurfaceSampler_6;
+layout(set = 8, binding = 0) uniform texture2D SurfaceTexture_7;
+layout(set = 8, binding = 1) uniform sampler SurfaceSampler_7;
 
 void main()
 {

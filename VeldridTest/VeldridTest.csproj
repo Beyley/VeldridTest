@@ -19,6 +19,8 @@
       <PackageReference Include="ShaderGen" Version="1.2.0-beta3" />
       <PackageReference Include="ShaderGen.Primitives" Version="1.2.0-beta3" />
       <PackageReference Include="SharpText.Veldrid" Version="0.2.0" />
+      <PackageReference Include="System.Drawing.Common" Version="6.0.0" />
+      <PackageReference Include="System.Numerics.Vectors" Version="4.5.0" />
       <PackageReference Include="Veldrid" Version="4.9.0-gffcf1cdb33" />
       <PackageReference Include="Veldrid.ImageSharp" Version="4.9.0-gffcf1cdb33" />
       <PackageReference Include="Veldrid.MetalBindings" Version="4.9.0-gffcf1cdb33" />
